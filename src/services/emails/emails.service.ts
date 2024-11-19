@@ -99,7 +99,7 @@ export async function getEmailsList ({ typeTime }: { typeTime: 'N' | 'T' }) {
 
     for (const course of courses) {
       const [emails] = await connection.query<Email[]>(`
-        SELECT u.correo
+        SELECT u.correo as name
         FROM curso_alumno_detalle cd
             INNER JOIN usuario u ON cd.alumno_id = u.usuario_id
         WHERE curso_id = ?
@@ -133,6 +133,7 @@ export async function sendEmailSessionReminder ({ typeTime }: { typeTime: 'N' | 
       const template = getTemplateSessionReminder({ ...course, typeTime })
 
       for (const emails of course.emails) {
+        console.log(emails)
         const response = await sendEmail({
           from: FROM_EMAIL,
           to: emails,
