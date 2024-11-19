@@ -60,7 +60,7 @@ export async function sendEmail ({ from, to, subject, html }: { from: string, to
 export async function getEmailsList ({ typeTime }: { typeTime: 'N' | 'T' }) {
   try {
     const typesTime: { [key:string]: string } = {
-      N: 'CURDATE()',
+      N: 'CURDATE() AND sc.hora > CURTIME()',
       T: 'CURDATE() + INTERVAL 1 DAY'
     }
 
@@ -89,7 +89,6 @@ export async function getEmailsList ({ typeTime }: { typeTime: 'N' | 'T' }) {
           INNER JOIN usuario as p ON sc.profesor_id = p.usuario_id
       WHERE sc.fecha = ${typesTime[typeTime]}
         AND sc.hora > '00:00:00'
-        AND sc.hora > CURTIME()
         AND sc.titulo NOT LIKE '%DEMO%'
         AND sc.titulo NOT LIKE '%INSTALACIÓN%'
         AND sc.curso_id NOT IN (${blacklistPrograms.join(',')})
