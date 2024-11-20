@@ -5,6 +5,9 @@ import authRouter from './services/auth/router'
 import certificateRouter from './services/certificates/route'
 import { sendEmailInstallmentDueReminder, sendEmailSessionReminder } from './services/emails/emails.service'
 
+// [] desactivar descargas
+// [] bloquear acceso exámenes
+
 const sessionReminderNow = new CronJob(
   '0 0 17 * * 1-5',
   async () => { await sendEmailSessionReminder({ typeTime: 'N' }) },

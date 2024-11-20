@@ -114,7 +114,7 @@ export async function getEmailsSessionReminderList ({ typeTime, programId }: { t
         AND sc.titulo NOT LIKE '%DEMO%'
         AND sc.titulo NOT LIKE '%INSTALACIÓN%'
         AND sc.curso_id NOT IN (${blacklistPrograms.join(',')}) 
-        ${programId ? '' : `AND sc.curso_id NOT IN (${customPrograms.join(',')})`}
+        ${programId || customPrograms.length === 0 ? '' : `AND sc.curso_id NOT IN (${customPrograms.join(',')})`}
         AND sc.asistencia = 'S'
     `)
 
@@ -136,7 +136,7 @@ export async function getEmailsSessionReminderList ({ typeTime, programId }: { t
         sessionName: formatText(course.sessionName),
         programName: formatText(course.programName),
         teacherName: formatText(course.teacherName),
-        emails: splitIntoGroups(emails.map((email) => email.name), 25)
+        emails: splitIntoGroups(emails.map((email) => formatText(email.name)), 25)
       })
     }
 
@@ -216,7 +216,7 @@ export async function getEmailsInstallmentDueReminderList ({ typeProgram, days }
 
       listInstallmentsEmails.push({
         id: installment.id,
-        email: installment.email,
+        email: formatText(installment.email),
         studentName: `${formatText(installment.studentName, 'upper')} ${formatText(installment.studentSurname[0], 'upper')}.`,
         cod: installment.cod,
         programName: formatText(installment.programName, 'upper'),
