@@ -3,7 +3,7 @@ import { CronJob } from 'cron'
 
 import authRouter from './services/auth/router'
 import certificateRouter from './services/certificates/route'
-import { sendEmailSessionReminder } from './services/emails/emails.service'
+import { sendEmailInstallmentDueReminder, sendEmailSessionReminder } from './services/emails/emails.service'
 
 const sessionReminderNow = new CronJob(
   '0 0 17 * * 1-5',
@@ -21,8 +21,22 @@ const sessionReminderTomorrow = new CronJob(
   'America/Lima'
 )
 
+const installmentDueReminder = new CronJob(
+  '0 0 0 * * *',
+  async () => {
+    await sendEmailInstallmentDueReminder({ typeProgram: 'C', days: 0 })
+    await sendEmailInstallmentDueReminder({ typeProgram: 'D', days: 0 })
+    await sendEmailInstallmentDueReminder({ typeProgram: 'C', days: 1 })
+    await sendEmailInstallmentDueReminder({ typeProgram: 'D', days: 1 })
+  },
+  null,
+  false,
+  'America/Lima'
+)
+
 sessionReminderNow.start()
 sessionReminderTomorrow.start()
+installmentDueReminder.start()
 
 const PORT = process.env.PORT
 const app = express()

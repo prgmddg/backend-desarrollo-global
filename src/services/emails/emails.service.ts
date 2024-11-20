@@ -4,6 +4,7 @@ import connection from '../../database/connection'
 import { RowDataPacket } from 'mysql2'
 import { formatText, splitIntoGroups } from '../../utils/format'
 import getTemplateSessionReminder from './templates/getTemplateSessionReminder'
+import getTemplateInstallmentDueReminder from './templates/getTemplateInstallmentDueReminder'
 
 interface Courses extends RowDataPacket{
   url: string,
@@ -15,12 +16,31 @@ interface Courses extends RowDataPacket{
   teacherName: string
 }
 
+interface Installments extends RowDataPacket {
+  id: number,
+  studentName: string,
+  studentSurname: string,
+  email: string,
+  programName: string,
+  cod: string,
+  amount: number,
+  advisors: string
+}
+
+interface Advisor extends RowDataPacket {
+    mobile: string,
+    phone: string
+}
+
 interface Email extends RowDataPacket {
   name: string
 }
 
-const blacklistPrograms = [0, 52, 559, 500, 1215, 1657]
+const blacklistPrograms = [0, 52, 559, 500, 1215, 1657, 1862, 2178]
 const blacklistUsers = [36296]
+
+const SUPPORTS_NUMBER = ['990945941', '952379602']
+const FROM_EMAIL = 'no_reply@desarrolloglobal.pe'
 
 export async function sendEmail ({ from, to, subject, html }: { from: string, to: string[], subject: string, html: string }) {
   try {
@@ -57,7 +77,7 @@ export async function sendEmail ({ from, to, subject, html }: { from: string, to
   }
 }
 
-export async function getEmailsList ({ typeTime }: { typeTime: 'N' | 'T' }) {
+export async function getEmailsSessionReminderList ({ typeTime }: { typeTime: 'N' | 'T' }) {
   try {
     const typesTime: { [key:string]: string } = {
       N: 'CURDATE() AND sc.hora > CURTIME()',
@@ -125,15 +145,12 @@ export async function getEmailsList ({ typeTime }: { typeTime: 'N' | 'T' }) {
 }
 export async function sendEmailSessionReminder ({ typeTime }: { typeTime: 'N' | 'T' }) {
   try {
-    const FROM_EMAIL = 'no_reply@desarrolloglobal.pe'
-
-    const listCoursesEmails = await getEmailsList({ typeTime })
+    const listCoursesEmails = await getEmailsSessionReminderList({ typeTime })
 
     for (const course of listCoursesEmails) {
       const template = getTemplateSessionReminder({ ...course, typeTime })
 
       for (const emails of course.emails) {
-        console.log(emails)
         const response = await sendEmail({
           from: FROM_EMAIL,
           to: emails,
@@ -151,6 +168,90 @@ export async function sendEmailSessionReminder ({ typeTime }: { typeTime: 'N' | 
       }
     }
 
+    return true
+  } catch (error) {
+    console.log(error)
+    return false
+  }
+}
+
+export async function getEmailsInstallmentDueReminderList ({ typeProgram, days }: { typeProgram: 'C' | 'D', days: number }) {
+  try {
+    const typesPrograms: { [key: string]: string } = {
+      C: 'cuota_curso as c INNER JOIN curso as p ON c.curso_id = p.curso_id',
+      D: 'cuota_diplomado as c INNER JOIN diplomado as p ON c.diplomado_id = p.diplomado_id'
+    }
+
+    const listInstallmentsEmails: { id: number, email: string, studentName: string, programName: string, cod: string, amount: number, expireDate: string, advisorNumber: string }[] = []
+
+    const [installments] = await connection.query<Installments[]>(`
+        SELECT
+            ${typeProgram === 'C' ? 'p.curso_id' : 'p.diplomado_id'} as id,
+            u.nombres as studentName,
+            u.apellidos as studentSurname,
+            u.correo as email,
+            p.titulo as programName,
+            c.codigo as cod,
+            c.monto as amount,
+            c.fecha_vencimiento as expireDate,
+            ${typeProgram === 'C' ? 'p.dirigido' : 'p.asesor'} as advisors
+        FROM ${typesPrograms[typeProgram]}
+        INNER JOIN usuario as u ON c.usuario_id = u.usuario_id
+        WHERE c.fecha_vencimiento = CURDATE() + INTERVAL ${days} DAY
+        AND c.estado = 'P'
+        AND u.usuario_id NOT IN (${blacklistUsers.join(',')})
+    `)
+
+    if (installments.length === 0) return listInstallmentsEmails
+
+    for (const installment of installments) {
+      const advisorsId: string[] = JSON.parse(installment.advisors)
+
+      const [advisor] = await connection.query<Advisor[]>('SELECT u.celular as mobile, u.telefono as phone FROM usuario as u WHERE u.usuario_id = ? LIMIT 1', [advisorsId[0]])
+
+      const advisorNumber = advisor.length > 0 ? advisor[0].mobile || advisor[0].phone : SUPPORTS_NUMBER[0]
+
+      listInstallmentsEmails.push({
+        id: installment.id,
+        email: installment.email,
+        studentName: `${formatText(installment.studentName, 'upper')} ${formatText(installment.studentSurname[0], 'upper')}.`,
+        cod: installment.cod,
+        programName: formatText(installment.programName, 'upper'),
+        amount: installment.amount,
+        expireDate: installment.expireDate,
+        advisorNumber
+      })
+    }
+
+    return listInstallmentsEmails
+  } catch (error) {
+    console.log(error)
+    return []
+  }
+}
+export async function sendEmailInstallmentDueReminder ({ typeProgram, days }: { typeProgram: 'C' | 'D', days: number }) {
+  try {
+    const listInstallmentsEmails = await getEmailsInstallmentDueReminderList({ typeProgram, days })
+
+    if (listInstallmentsEmails.length === 0) return false
+
+    for (const installmentEmail of listInstallmentsEmails) {
+      const template = getTemplateInstallmentDueReminder(installmentEmail)
+      const response = await sendEmail({
+        from: FROM_EMAIL,
+        to: [installmentEmail.email],
+        subject: 'Recordatorio de Vencimiento de Cuota',
+        html: template
+      })
+
+      const message = response.status ? `Enviado a ${installmentEmail.email} del programa (${installmentEmail.id})-${installmentEmail.programName}` : `Error: ${response.message}`
+
+      try {
+        await connection.query('INSERT INTO logs_task ( status, message, task_id ) VALUES (?, ?, ?)', [response.status, message, 2])
+      } catch (error) {
+        console.log(error)
+      }
+    }
     return true
   } catch (error) {
     console.log(error)

@@ -1,6 +1,8 @@
 import * as iconv from 'iconv-lite'
 
-export function formatText (text: string, fn?: 'lower' | 'upper') {
+export function formatText (text?: string, fn?: 'lower' | 'upper') {
+  if (!text || text.length === 0) return ''
+
   const formatTxt = iconv.decode(Buffer.from(text, 'binary'), 'utf-8').trim()
 
   if (fn === 'lower') return formatTxt.toLowerCase()
