@@ -36,8 +36,9 @@ interface Email extends RowDataPacket {
   name: string
 }
 
-const blacklistPrograms = [0, 52, 559, 500, 1215, 1657, 1862, 2178]
-const blacklistUsers = [36296]
+const blacklistPrograms: number[] = [0, 52, 559, 500, 1215, 1657, 1862]
+const customPrograms: number[] = []
+const blacklistUsers: number[] = [36296]
 
 const SUPPORTS_NUMBER = ['990945941', '952379602']
 const FROM_EMAIL = 'no_reply@desarrolloglobal.pe'
@@ -77,7 +78,7 @@ export async function sendEmail ({ from, to, subject, html }: { from: string, to
   }
 }
 
-export async function getEmailsSessionReminderList ({ typeTime }: { typeTime: 'N' | 'T' }) {
+export async function getEmailsSessionReminderList ({ typeTime, programId }: { typeTime: 'N' | 'T', programId?: number }) {
   try {
     const typesTime: { [key:string]: string } = {
       N: 'CURDATE() AND sc.hora > CURTIME()',
@@ -108,10 +109,12 @@ export async function getEmailsSessionReminderList ({ typeTime }: { typeTime: 'N
           LEFT JOIN curso as c ON sc.curso_id = c.curso_id
           INNER JOIN usuario as p ON sc.profesor_id = p.usuario_id
       WHERE sc.fecha = ${typesTime[typeTime]}
+        ${programId ? `AND c.curso_id = ${programId}` : ''}
         AND sc.hora > '00:00:00'
         AND sc.titulo NOT LIKE '%DEMO%'
         AND sc.titulo NOT LIKE '%INSTALACIÓN%'
-        AND sc.curso_id NOT IN (${blacklistPrograms.join(',')})
+        AND sc.curso_id NOT IN (${blacklistPrograms.join(',')}) 
+        ${programId ? '' : `AND sc.curso_id NOT IN (${customPrograms.join(',')})`}
         AND sc.asistencia = 'S'
     `)
 
@@ -143,9 +146,9 @@ export async function getEmailsSessionReminderList ({ typeTime }: { typeTime: 'N
     return []
   }
 }
-export async function sendEmailSessionReminder ({ typeTime }: { typeTime: 'N' | 'T' }) {
+export async function sendEmailSessionReminder ({ typeTime, programId }: { typeTime: 'N' | 'T', programId?: number }) {
   try {
-    const listCoursesEmails = await getEmailsSessionReminderList({ typeTime })
+    const listCoursesEmails = await getEmailsSessionReminderList({ typeTime, programId })
 
     for (const course of listCoursesEmails) {
       const template = getTemplateSessionReminder({ ...course, typeTime })

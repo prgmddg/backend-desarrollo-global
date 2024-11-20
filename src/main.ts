@@ -15,7 +15,9 @@ const sessionReminderNow = new CronJob(
 
 const sessionReminderTomorrow = new CronJob(
   '0 0 20 * * 5',
-  async () => { await sendEmailSessionReminder({ typeTime: 'T' }) },
+  async () => {
+    await sendEmailSessionReminder({ typeTime: 'T' })
+  },
   null,
   false,
   'America/Lima'
