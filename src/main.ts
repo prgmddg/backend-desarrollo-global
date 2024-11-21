@@ -4,9 +4,12 @@ import { CronJob } from 'cron'
 import authRouter from './services/auth/router'
 import certificateRouter from './services/certificates/route'
 import { sendEmailInstallmentDueReminder, sendEmailSessionReminder } from './services/emails/emails.service'
+import disabledDownloads from './services/tasks/tasks.service'
 
-// [] desactivar descargas
-// [] bloquear acceso exámenes
+// [x] recordatorio sesión
+// [x] recordatorio cuota
+// [ ] desactivar descargas
+// [ ] bloquear acceso exámenes
 
 const sessionReminderNow = new CronJob(
   '0 0 17 * * 1-5',
@@ -20,6 +23,16 @@ const sessionReminderTomorrow = new CronJob(
   '0 0 20 * * 5',
   async () => {
     await sendEmailSessionReminder({ typeTime: 'T' })
+  },
+  null,
+  false,
+  'America/Lima'
+)
+
+const disabledDownloadsTask = new CronJob(
+  '0 0 0 * * *',
+  async () => {
+    await disabledDownloads({ days: 7 })
   },
   null,
   false,
@@ -42,6 +55,8 @@ const installmentDueReminder = new CronJob(
 sessionReminderNow.start()
 sessionReminderTomorrow.start()
 installmentDueReminder.start()
+
+disabledDownloadsTask.start()
 
 const PORT = process.env.PORT
 const app = express()
