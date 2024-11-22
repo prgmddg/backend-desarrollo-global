@@ -103,7 +103,7 @@ export async function disabledExams ({ days }: { days: number }) {
         await connection.query(`
             UPDATE acceso_examen_usuario_curso
             SET estado = 'b', fecha_limite = '0000-00-00'
-            WHERE acceso_id IN (${updates.join(',')})
+            WHERE acceso_id IN (${updates.join(',')}) AND fecha_limite < CURDATE()
         `)
       }
 

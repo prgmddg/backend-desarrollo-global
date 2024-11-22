@@ -4,6 +4,8 @@ import { CronJob } from 'cron'
 import authRouter from './services/auth/router'
 import certificateRouter from './services/certificates/route'
 import videoRouter from './services/videos/route'
+import tasksRouter from './services/tasks/router'
+import documentRouter from './services/document/route'
 import { sendEmailInstallmentDueReminder, sendEmailSessionReminder } from './services/emails/emails.service'
 import { disabledDownloads, disabledExams } from './services/tasks/tasks.service'
 
@@ -100,6 +102,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use('/auth', authRouter)
 app.use('/certificates', certificateRouter)
 app.use('/download/videos', videoRouter)
+app.use('/tasks', tasksRouter)
+app.use('/document', documentRouter)
 
 app.use('*', (req: Request, res: Response) => res.status(404).json({ status: 404, path: req.baseUrl === '' ? '/' : req.baseUrl, method: req.method }))
 
