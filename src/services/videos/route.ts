@@ -25,7 +25,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     vimeo.request({
       path: `/me/videos/${id}`,
       method: 'GET'
-    }, (error, body) => {
+    }, (error: Error | null, body: { download: object[] }) => {
       if (error) return res.status(404).json({ error: 'NOT_FOUND' })
 
       return res.status(200).json({
