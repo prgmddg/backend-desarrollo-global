@@ -3,6 +3,7 @@ import { CronJob } from 'cron'
 
 import authRouter from './services/auth/router'
 import certificateRouter from './services/certificates/route'
+import videoRouter from './services/videos/route'
 import { sendEmailInstallmentDueReminder, sendEmailSessionReminder } from './services/emails/emails.service'
 import { disabledDownloads, disabledExams } from './services/tasks/tasks.service'
 
@@ -75,7 +76,16 @@ const app = express()
 app.use(express.json())
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-  res.setHeader('Access-Control-Allow-Origin', process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://crm.desarrolloglobal.pe')
+  const allowedOrigins = [
+    'https://crm.desarrolloglobal.pe',
+    'https://aula.desarrolloglobal.pe'
+  ]
+
+  const origin = process.env.NODE_ENV === 'development'
+    ? 'http://localhost:3000'
+    : (allowedOrigins.includes(req.headers.origin ?? '') ? req.headers.origin : '')
+
+  res.setHeader('Access-Control-Allow-Origin', origin ?? '')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   res.setHeader('Access-Control-Allow-Credentials', 'true')
@@ -89,7 +99,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use('/auth', authRouter)
 app.use('/certificates', certificateRouter)
+app.use('/download/videos', videoRouter)
 
-app.use('*', (req: Request, res: Response) => res.status(404).json({ path: req.baseUrl === '' ? '/' : req.baseUrl, method: req.method }))
+app.use('*', (req: Request, res: Response) => res.status(404).json({ status: 404, path: req.baseUrl === '' ? '/' : req.baseUrl, method: req.method }))
 
 app.listen(PORT, () => console.log('server running'))
