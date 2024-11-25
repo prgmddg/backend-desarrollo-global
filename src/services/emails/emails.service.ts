@@ -36,7 +36,7 @@ interface Email extends RowDataPacket {
   name: string
 }
 
-const blacklistPrograms: number[] = [0, 52, 559, 500, 1215, 1657, 1862]
+const blacklistPrograms: number[] = [0, 2236, 52, 559, 500, 1215, 1657, 1862]
 const customPrograms: number[] = []
 const blacklistUsers: number[] = [36296]
 

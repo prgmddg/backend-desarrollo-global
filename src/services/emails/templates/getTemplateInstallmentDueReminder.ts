@@ -14,7 +14,7 @@ function getFormatDate (fecha: string) {
   const month = date.getMonth() + 1
   const day = date.getDate()
 
-  return `${day > 10 ? '' : '0'}${day}/${month > 10 ? '' : '0'}${month}/${year}`
+  return `${day < 10 ? '0' : ''}${day}/${month < 10 ? '0' : ''}${month}/${year}`
 }
 
 export default function getTemplateInstallmentDueReminder ({ studentName, programName, cod, amount, expireDate, advisorNumber }: { studentName: string, programName: string, cod: string, amount: number, expireDate: string, advisorNumber: string }) {

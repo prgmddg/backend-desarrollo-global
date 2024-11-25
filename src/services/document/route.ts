@@ -1,5 +1,11 @@
 import { Request, Response, Router } from 'express'
 import * as process from 'node:process'
+import connection from '../../database/connection'
+import { RowDataPacket } from 'mysql2'
+
+interface Register extends RowDataPacket{
+  document: string
+}
 
 export const router = Router()
 
@@ -35,6 +41,8 @@ router.get('/:document', async (req: Request, res: Response) => {
 
       if (!success) return res.status(404).json({ success, data })
 
+      const [registers] = await connection.query<Register[]>('SELECT dni as document FROM usuario WHERE dni = ?', [document])
+
       return res.status(200).json({
         document: data.numero,
         names: data.nombres,
@@ -46,7 +54,8 @@ router.get('/:document', async (req: Request, res: Response) => {
         location: '',
         department: '',
         province: '',
-        district: ''
+        district: '',
+        register: registers.length > 0
       })
     }
 
@@ -96,7 +105,8 @@ router.get('/:document', async (req: Request, res: Response) => {
         location: data.ubigeo_sunat,
         department: data.departamento,
         province: data.provincia,
-        district: data.distrito
+        district: data.distrito,
+        register: false
       })
     }
 
