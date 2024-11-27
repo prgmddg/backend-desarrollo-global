@@ -14,6 +14,14 @@ import { disabledDownloads, disabledExams } from './services/tasks/tasks.service
 // [ ] desactivar descargas
 // [ ] bloquear acceso exámenes
 
+const sessionReminderCurrent = new CronJob(
+  '0 0 12-17 * * 1-5',
+  async () => { await sendEmailSessionReminder({ typeTime: 'C' }) },
+  null,
+  false,
+  'America/Lima'
+)
+
 const sessionReminderNow = new CronJob(
   '0 0 17 * * 1-5',
   async () => { await sendEmailSessionReminder({ typeTime: 'N' }) },
@@ -65,6 +73,7 @@ const installmentDueReminder = new CronJob(
   'America/Lima'
 )
 
+sessionReminderCurrent.start()
 sessionReminderNow.start()
 sessionReminderTomorrow.start()
 installmentDueReminder.start()

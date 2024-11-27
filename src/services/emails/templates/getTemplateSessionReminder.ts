@@ -1,6 +1,7 @@
-export default function getTemplateSessionReminder ({ url, typeTime, startSession, dateSession, sessionName, programName, teacherName }: { url: string, id: number, sessionName: string, startSession: string, dateSession: string, programName: string, teacherName: string, emails: string[][], typeTime: 'N' | 'T' }) {
+export default function getTemplateSessionReminder ({ url, typeTime, startSession, dateSession, sessionName, programName, teacherName }: { url: string, id: number, sessionName: string, startSession: string, dateSession: string, programName: string, teacherName: string, emails: string[][], typeTime: 'N' | 'T' | 'C' }) {
   const typesTime: { [key: string]: string } = {
     N: 'Hoy',
+    C: 'Hoy',
     T: 'Mañana'
   }
 

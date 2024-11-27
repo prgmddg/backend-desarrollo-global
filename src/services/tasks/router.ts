@@ -96,7 +96,14 @@ const tasks: Task[] = [
     timesExecuted: 0,
     type: 'e',
     executions: [],
-    template: '',
+    template: getTemplateWelcomeInHouse({
+      url: 'https://us02web.zoom.us/j/1234567890',
+      os: 'OS-2024',
+      companyName: 'Centro de Capacitación y Desarrollo Global',
+      email: 'info@desarrolloglobal.pe',
+      name: 'CCARHUAPOMA REYES MILAGROS FIORELLA',
+      dni: '60917003'
+    }),
     status: true
   }
 ]
@@ -185,7 +192,7 @@ router.post('/:id/send', async (req: Request, res: Response) => {
     console.log(req.body)
     const { os, url, data, programName, companyName } = req.body as { os: string, url: string, programName?: string, companyName?: string, data: { name: string, email: string, dni: string }[] }
 
-    if (!os || !url || !programName || !companyName) return res.status(400).json({ error: 'BAD_REQUEST' })
+    if (!programName || !companyName) return res.status(400).json({ error: 'BAD_REQUEST' })
 
     const emailsValid = []
     const emailsInvalid = []

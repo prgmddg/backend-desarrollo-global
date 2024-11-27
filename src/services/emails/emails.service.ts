@@ -78,10 +78,11 @@ export async function sendEmail ({ from, to, subject, html }: { from: string, to
   }
 }
 
-export async function getEmailsSessionReminderList ({ typeTime, programId }: { typeTime: 'N' | 'T', programId?: number }) {
+export async function getEmailsSessionReminderList ({ typeTime, programId }: { typeTime: 'N' | 'T' | 'C', programId?: number }) {
   try {
     const typesTime: { [key:string]: string } = {
       N: 'CURDATE() AND sc.hora > CURTIME()',
+      C: 'CURDATE() AND sc.hora >= CURTIME() + INTERVAL 1 HOUR AND sc.hora < CURTIME() + INTERVAL 2 HOUR',
       T: 'CURDATE() + INTERVAL 1 DAY'
     }
 
@@ -146,7 +147,7 @@ export async function getEmailsSessionReminderList ({ typeTime, programId }: { t
     return []
   }
 }
-export async function sendEmailSessionReminder ({ typeTime, programId }: { typeTime: 'N' | 'T', programId?: number }) {
+export async function sendEmailSessionReminder ({ typeTime, programId }: { typeTime: 'N' | 'T' | 'C', programId?: number }) {
   try {
     const listCoursesEmails = await getEmailsSessionReminderList({ typeTime, programId })
 
