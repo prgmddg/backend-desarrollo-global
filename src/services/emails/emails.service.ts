@@ -82,7 +82,7 @@ export async function getEmailsSessionReminderList ({ typeTime, programId }: { t
   try {
     const typesTime: { [key:string]: string } = {
       N: 'CURDATE() AND sc.hora > CURTIME()',
-      C: 'CURDATE() AND sc.hora >= CURTIME() + INTERVAL 1 HOUR AND sc.hora < CURTIME() + INTERVAL 2 HOUR',
+      C: 'CURDATE() AND sc.hora >= CONCAT(CURDATE(), " ", CURTIME()) + INTERVAL 1 HOUR AND sc.hora < CONCAT(CURDATE(), " ", CURTIME()) + INTERVAL 2 HOUR',
       T: 'CURDATE() + INTERVAL 1 DAY'
     }
 
