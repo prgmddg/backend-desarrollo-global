@@ -43,12 +43,23 @@ const blacklistUsers: number[] = [36296]
 const SUPPORTS_NUMBER = ['990945941', '952379602']
 const FROM_EMAIL = 'no_reply@desarrolloglobal.pe'
 
-export async function sendEmail ({ from, to, subject, html }: { from: string, to: string[], subject: string, html: string }) {
+interface Props {
+  from: string,
+  to: string[],
+  cc?: string[],
+  bcc?: string[],
+  subject: string,
+  html: string
+}
+
+export async function sendEmail ({ from, to, cc, bcc, subject, html }: Props) {
   try {
     const command = new SendEmailCommand({
       Source: from,
       Destination: {
-        ToAddresses: to
+        ToAddresses: to,
+        CcAddresses: cc,
+        BccAddresses: bcc
       },
       Message: {
         Subject: {
@@ -147,9 +158,12 @@ export async function getEmailsSessionReminderList ({ typeTime, programId }: { t
     return []
   }
 }
+
 export async function sendEmailSessionReminder ({ typeTime, programId }: { typeTime: 'N' | 'T' | 'C', programId?: number }) {
   try {
     const listCoursesEmails = await getEmailsSessionReminderList({ typeTime, programId })
+
+    console.log(listCoursesEmails.length)
 
     for (const course of listCoursesEmails) {
       const template = getTemplateSessionReminder({ ...course, typeTime })

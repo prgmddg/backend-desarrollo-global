@@ -5,6 +5,10 @@ import getTemplateSessionReminder from '../emails/templates/getTemplateSessionRe
 import getTemplateInstallmentDueReminder from '../emails/templates/getTemplateInstallmentDueReminder'
 import { sendEmail } from '../emails/emails.service'
 import getTemplateWelcomeInHouse from '../emails/templates/getTemplateWelcomeInHouse'
+import getTemplateInHousePer from '../emails/templates/getTemplateInhousePer'
+import { splitIntoGroups } from '../../utils/format'
+import getTemplateExamen from '../emails/templates/getTemplateExamen'
+import getTemplateSesionGrabada from '../emails/templates/getTemplateSesionGrabada'
 
 interface TaskLogs {
     status: boolean,
@@ -189,20 +193,81 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 router.post('/:id/send', async (req: Request, res: Response) => {
   try {
-    console.log(req.body)
-    const { os, url, data, programName, companyName } = req.body as { os: string, url: string, programName?: string, companyName?: string, data: { name: string, email: string, dni: string }[] }
+    const { os, url, data, programName, companyName, urlWhatsapp } = req.body as { os: string, url: string, urlWhatsapp?: string, programName?: string, companyName?: string, data: { name: string, email: string, dni: string }[] }
+    const { id } = req.params as { id: string }
 
     if (!programName || !companyName) return res.status(400).json({ error: 'BAD_REQUEST' })
 
     const emailsValid = []
     const emailsInvalid = []
 
+    if (id === '6') {
+      const emails = data.map(d => d.email)
+
+      const response = await sendEmail({
+        from: 'info@desarrolloglobal.pe',
+        to: emails,
+        subject: `Última Sesión del Curso ${programName.toUpperCase()}`,
+        html: getTemplateInHousePer({ programName })
+      })
+
+      if (response.status) {
+        emailsValid.push(emails)
+      } else {
+        emailsInvalid.push(emails)
+      }
+
+      const message = `correctos: ${emails.length} correos enviados correctamente del programa ${programName.toUpperCase()}`
+
+      await connection.query('INSERT INTO logs_task ( status, message, task_id ) VALUES (?, ?, ?)', [true, message, 9])
+
+      return res.status(200).json({ message: 'SUCCESS' })
+    }
+
+    if (id === '7') {
+      const emails = splitIntoGroups(data.map(d => d.email), 25)
+
+      for (const email of emails) {
+        await sendEmail({
+          from: 'info@desarrolloglobal.pe',
+          to: email,
+          subject: `Recordatorio de Examen Final ${programName.toUpperCase()}`,
+          html: getTemplateExamen()
+        })
+
+        const message = `correctos: ${email.length} correos enviados correctamente del programa ${programName.toUpperCase()}`
+
+        await connection.query('INSERT INTO logs_task ( status, message, task_id ) VALUES (?, ?, ?)', [true, message, 10])
+      }
+
+      return res.status(200).json({ message: 'SUCCESS' })
+    }
+
+    if (id === '8') {
+      const emails = splitIntoGroups(data.map(d => d.email), 25)
+
+      for (const email of emails) {
+        await sendEmail({
+          from: 'info@desarrolloglobal.pe',
+          to: email,
+          subject: `Disponibilidad de la Sesión 02 del Curso ${programName.toUpperCase()}`,
+          html: getTemplateSesionGrabada()
+        })
+
+        const message = `correctos: ${email.length} correos enviados correctamente del programa ${programName.toUpperCase()}`
+
+        await connection.query('INSERT INTO logs_task ( status, message, task_id ) VALUES (?, ?, ?)', [true, message, 11])
+      }
+
+      return res.status(200).json({ message: 'SUCCESS' })
+    }
+
     for (const d of data) {
       const response = await sendEmail({
         from: 'info@desarrolloglobal.pe',
         to: [d.email],
         subject: 'Registro de Capacitación',
-        html: getTemplateWelcomeInHouse({ ...d, companyName, os, url })
+        html: getTemplateWelcomeInHouse({ ...d, companyName, os, url, urlWhatsapp })
       })
 
       if (response.status) {
@@ -215,6 +280,8 @@ router.post('/:id/send', async (req: Request, res: Response) => {
     const message = `correctos: ${emailsValid.length} incorrectos: ${emailsInvalid.length} correos de bienvenida enviados correctamente del programa ${programName.toUpperCase()}`
 
     await connection.query('INSERT INTO logs_task ( status, message, task_id ) VALUES (?, ?, ?)', [true, message, 5])
+
+    return res.status(200).json({ message: 'SUCCESS' })
   } catch (error) {
     console.log(error)
     return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' })

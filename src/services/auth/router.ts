@@ -17,6 +17,7 @@ interface UserDB extends RowDataPacket {
   correo: string
   password: string
   categoria: string
+  rol?: string
   avatar: string
   fecha_registro: string
   estado: string
@@ -30,11 +31,14 @@ router.post('/sign-in', async (req: Request, res: Response) => {
 
     if (!payload.email) return res.status(400).json({ error: 'EMPTY_EMAIL' })
     if (!payload.password) return res.status(400).json({ error: 'EMPTY_PASSWORD' })
-    const [users] = await connection.query<UserDB[]>('SELECT * FROM usuario WHERE categoria <> ? AND estado = ? AND correo = ? LIMIT 1', ['ALUM', 'A', payload.email])
-
+    const [users] = await connection.query<UserDB[]>('SELECT * FROM usuario WHERE ( categoria <> ? OR rol = ? ) AND estado = ? AND correo = ? LIMIT 1', ['ALUM', 'ENTI', 'A', payload.email])
+    console.log(users)
     if (users.length === 0 || !(await compare(payload.password, users[0].password))) return res.status(401).json({ error: 'INVALID_USER' })
 
-    const token = generateToken<{ email: string, rol: string }>({ email: users[0].correo, rol: users[0].categoria }, '7d')
+    const token = generateToken<{ email: string, rol: string }>({
+      email: users[0].correo,
+      rol: users[0].rol ? 'ENTI' : users[0].categoria
+    }, '7d')
     const expires = new Date()
     expires.setDate(expires.getDate() + (payload.rememberMe ? 7 : 1))
     expires.setHours(0, 0, 0, 0)
@@ -51,8 +55,8 @@ router.post('/sign-in', async (req: Request, res: Response) => {
       surnames: users[0].apellidos,
       email: users[0].correo,
       rol: {
-        cod: users[0].categoria,
-        name: categories[users[0].categoria]
+        cod: users[0].rol ? 'ENTI' : users[0].categoria,
+        name: users[0].rol ? 'Entidad' : categories[users[0].categoria]
       },
       picture: users[0].avatar,
       createdAt: users[0].fecha_registro,
@@ -92,10 +96,11 @@ router.get('/me', async (req: Request, res: Response) => {
     if (!token) return res.status(401).json({ error: 'UNAUTHORIZED' })
 
     const data = verifyToken<{ email: string, rol: string }>(token)
+    console.log('=>', data)
 
     if (!data) return res.status(401).json({ error: 'UNAUTHORIZED' })
 
-    const [users] = await connection.query<UserDB[]>('SELECT * FROM usuario WHERE categoria <> ? AND estado = ? AND correo = ? LIMIT 1', ['ALUM', 'A', data.email])
+    const [users] = await connection.query<UserDB[]>('SELECT * FROM usuario WHERE ( categoria <> ? OR rol = ? ) AND estado = ? AND correo = ? LIMIT 1', ['ALUM', 'ENTI', 'A', data.email])
 
     if (users.length < 1) return res.status(401).json({ error: 'UNAUTHORIZED' })
 
@@ -105,8 +110,8 @@ router.get('/me', async (req: Request, res: Response) => {
       surnames: users[0].apellidos,
       email: users[0].correo,
       rol: {
-        cod: users[0].categoria,
-        name: categories[users[0].categoria]
+        cod: users[0].rol ? 'ENTI' : users[0].categoria,
+        name: users[0].rol ? 'Entidad' : categories[users[0].categoria]
       },
       picture: users[0].avatar,
       createdAt: users[0].fecha_registro,

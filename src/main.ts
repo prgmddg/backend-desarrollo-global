@@ -6,13 +6,11 @@ import certificateRouter from './services/certificates/route'
 import videoRouter from './services/videos/route'
 import tasksRouter from './services/tasks/router'
 import documentRouter from './services/document/route'
+import prospectsRouter from './services/prospects/route'
+import examsRouter from './services/exams/route'
+
 import { sendEmailInstallmentDueReminder, sendEmailSessionReminder } from './services/emails/emails.service'
 import { disabledDownloads, disabledExams } from './services/tasks/tasks.service'
-
-// [x] recordatorio sesión
-// [x] recordatorio cuota
-// [ ] desactivar descargas
-// [ ] bloquear acceso exámenes
 
 const sessionReminderCurrent = new CronJob(
   '0 0 12-17 * * 1-5',
@@ -76,8 +74,8 @@ const installmentDueReminder = new CronJob(
 sessionReminderCurrent.start()
 sessionReminderNow.start()
 sessionReminderTomorrow.start()
-installmentDueReminder.start()
 
+installmentDueReminder.start()
 disabledDownloadsTask.start()
 disabledExamsTask.start()
 
@@ -113,6 +111,8 @@ app.use('/certificates', certificateRouter)
 app.use('/download/videos', videoRouter)
 app.use('/tasks', tasksRouter)
 app.use('/document', documentRouter)
+app.use('/prospects', prospectsRouter)
+app.use('/exams', examsRouter)
 
 app.use('*', (req: Request, res: Response) => res.status(404).json({ status: 404, path: req.baseUrl === '' ? '/' : req.baseUrl, method: req.method }))
 
